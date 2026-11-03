@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="refresh" content="300">
+  <title>Radar Global de Ações PRO</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #0b0f19; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+    .borda-comprar { border-left: 5px solid #10b981; }
+    .borda-aguardar { border-left: 5px solid #f59e0b; }
+    .borda-evitar { border-left: 5px solid #ef4444; }
+  </style>
+</head>
+<body class="p-3 md:p-8 max-w-7xl mx-auto">
+
+  <!-- Cabeçalho -->
+  <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3 border-b border-slate-800 pb-4">
+    <div>
+      <h1 class="text-xl md:text-3xl font-bold text-white flex items-center gap-2">
+        📊 Radar Global de Ações <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full">11 Setores</span>
+      </h1>
+      <p class="text-slate-400 text-xs md:text-sm mt-1">
+        Atualização automática a cada 5 min | Próxima em: <strong id="timer" class="text-emerald-400">05:00</strong>
+      </p>
+    </div>
+    <input id="pesquisa" oninput="aplicarFiltros()" type="text" placeholder="🔍 Procurar ticker ou empresa..." class="w-full md:w-64 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+  </header>
+
+  <!-- Filtro de Setores -->
+  <div class="mb-3">
+    <label class="text-xs text-slate-400 block mb-1.5 uppercase tracking-wider font-semibold">1. Escolher Setor do Mercado:</label>
+    <select id="filtroSetor" onchange="aplicarFiltros()" class="w-full md:w-auto bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm font-medium">
+      <option value="TODOS">🌐 Todos os Setores (22 Ações)</option>
+      <option value="Tecnologia">💻 Tecnologia & Semicondutores</option>
+      <option value="Energia">⚡ Energia & Utilities</option>
+      <option value="Imobiliário (REITs)">🏢 Imobiliário (REITs)</option>
+      <option value="Saúde">🧬 Saúde & Farmacêuticas</option>
+      <option value="Financeiro">🏦 Financeiro & Banca</option>
+      <option value="Consumo">🛒 Consumo (Crescimento & Defensivo)</option>
+      <option value="Comunicações">📡 Comunicações & Media</option>
+      <option value="Indústria & Materiais">🏭 Indústria, Redes & Materiais</option>
+      <option value="Cripto & Alto Risco">🪙 Cripto-Stocks (Alto Risco)</option>
+    </select>
+  </div>
+
+  <!-- Filtro de Sinais e Cores -->
+  <div class="flex flex-wrap gap-2 mb-6">
+    <button onclick="mudarSinal('TODOS')" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-xs md:text-sm font-medium border border-slate-700">📋 Todas</button>
+    <button onclick="mudarSinal('COMPRAR')" class="bg-emerald-950 hover:bg-emerald-900 text-emerald-300 px-3 py-2 rounded-lg text-xs md:text-sm font-medium border border-emerald-700/50">🟢 Boa Compra</button>
+    <button onclick="mudarSinal('BARATO')" class="bg-teal-950 hover:bg-teal-900 text-teal-300 px-3 py-2 rounded-lg text-xs md:text-sm font-medium border border-teal-700/50">💎 Muito Barato & Barato</button>
+    <button onclick="mudarSinal('POTENCIAL')" class="bg-indigo-950 hover:bg-indigo-900 text-indigo-300 px-3 py-2 rounded-lg text-xs md:text-sm font-medium border border-indigo-700/50">🚀 Muito Potencial</button>
+    <button onclick="mudarSinal('EVITAR')" class="bg-rose-950 hover:bg-rose-900 text-rose-300 px-3 py-2 rounded-lg text-xs md:text-sm font-medium border border-rose-700/50">🔴 Não Comprar</button>
+  </div>
+
+  <!-- Grelha de Cartões -->
+  <div id="grelha" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+  <script>
+    let sinalAtivo = "TODOS";
+    let seg = 300;
+
+    const acoes = [
+      { t: "MSFT", n: "Microsoft", s: "Tecnologia", p: "$428.50", pe: 31.2, rsi: 49, av: "PREÇO JUSTO", pot: "MUITO POTENCIAL", pct: 85, dec: "COMPRAR", nota: "Líder em Cloud Azure e IA empresarial com fluxo de caixa massivo." },
+      { t: "ASML", n: "ASML Holding", s: "Tecnologia", p: "€685.00", pe: 28.5, rsi: 42, av: "BARATO", pot: "MUITO POTENCIAL", pct: 88, dec: "COMPRAR", nota: "Monopólio de máquinas de chips avançados; corrigiu para excelente zona de suporte." },
+      { t: "NVDA", n: "NVIDIA Corp.", s: "Tecnologia", p: "$138.60", pe: 36.5, rsi: 61, av: "PREÇO JUSTO", pot: "MUITO POTENCIAL", pct: 92, dec: "AGUARDAR", nota: "Domínio absoluto em chips de IA, mas aguardar recuo técnico para melhor entrada." },
+      { t: "INDI", n: "indie Semi", s: "Tecnologia", p: "$4.60", pe: -12, rsi: 45, av: "BARATO", pot: "MUITO POTENCIAL", pct: 76, dec: "AGUARDAR", nota: "Chips automóveis com forte carteira de encomendas; aguardar subida acima da EMA 200." },
+      { t: "INTC", n: "Intel Corp.", s: "Tecnologia", p: "$22.80", pe: 48.0, rsi: 39, av: "CARO", pot: "POUCO POTENCIAL", pct: 22, dec: "NÃO COMPRAR", nota: "Perda de quota de mercado e custos pesados de reestruturação." },
+      { t: "FSLR", n: "First Solar", s: "Energia", p: "$192.40", pe: 13.5, rsi: 41, av: "MUITO BARATO", pot: "MUITO POTENCIAL", pct: 88, dec: "COMPRAR", nota: "P/E de apenas 13.5x, encomendas cheias até 2028 e mais caixa que dívida." },
+      { t: "VST", n: "Vistra Corp.", s: "Energia", p: "$138.37", pe: 23.3, rsi: 46, av: "BARATO", pot: "MUITO POTENCIAL", pct: 86, dec: "COMPRAR", nota: "Energia nuclear e gás natural para alimentar Data Centers de IA." },
+      { t: "EDP.LS", n: "EDP Portugal", s: "Energia", p: "€4.85", pe: 14.5, rsi: 52, av: "BARATO", pot: "BOM POTENCIAL", pct: 68, dec: "AGUARDAR", nota: "Barata e bom dividendo (~4%), mas aguardar resultados de 5 de novembro." },
+      { t: "PLUG", n: "Plug Power", s: "Energia", p: "$1.80", pe: -5, rsi: 28, av: "MUITO CARO", pot: "POUCO POTENCIAL", pct: 12, dec: "NÃO COMPRAR", nota: "Queima constante de caixa e diluição severa dos acionistas." },
+      { t: "O", n: "Realty Income", s: "Imobiliário (REITs)", p: "$59.40", pe: 14.2, rsi: 44, av: "MUITO BARATO", pot: "BOM POTENCIAL", pct: 74, dec: "COMPRAR", nota: "Dividendos mensais crescentes (~5.3% yield) e avaliação muito barata." },
+      { t: "PLD", n: "Prologis REIT", s: "Imobiliário (REITs)", p: "$115.20", pe: 20.5, rsi: 43, av: "BARATO", pot: "BOM POTENCIAL", pct: 78, dec: "COMPRAR", nota: "Líder mundial em armazéns logísticos (Amazon, FedEx) em suporte técnico." },
+      { t: "OPI", n: "Office Properties", s: "Imobiliário (REITs)", p: "$1.45", pe: -3.5, rsi: 29, av: "MUITO CARO", pot: "POUCO POTENCIAL", pct: 10, dec: "NÃO COMPRAR", nota: "Escritórios comerciais com dívida pesada e perda de inquilinos." },
+      { t: "NVO", n: "Novo Nordisk", s: "Saúde", p: "$112.50", pe: 27.8, rsi: 45, av: "BARATO", pot: "MUITO POTENCIAL", pct: 85, dec: "COMPRAR", nota: "Líder europeia em tratamentos metabólicos (Ozempic/Wegovy) em bom ponto de entrada." },
+      { t: "PFE", n: "Pfizer Inc.", s: "Saúde", p: "$28.10", pe: 18.5, rsi: 47, av: "PREÇO JUSTO", pot: "POUCO POTENCIAL", pct: 35, dec: "NÃO COMPRAR", nota: "Receitas estagnadas pós-pandemia e dívida elevada." },
+      { t: "JPM", n: "JPMorgan Chase", s: "Financeiro", p: "$225.40", pe: 12.6, rsi: 51, av: "MUITO BARATO", pot: "BOM POTENCIAL", pct: 76, dec: "COMPRAR", nota: "Balanço mais sólido da banca mundial com P/E de apenas 12.6x." },
+      { t: "BCP.LS", n: "Millennium BCP", s: "Financeiro", p: "€0.46", pe: 6.8, rsi: 54, av: "MUITO BARATO", pot: "BOM POTENCIAL", pct: 75, dec: "COMPRAR", nota: "Múltiplo P/E de 6.8x, forte rentabilidade e dividendos em subida." },
+      { t: "AMZN", n: "Amazon.com", s: "Consumo", p: "$198.20", pe: 34.0, rsi: 53, av: "PREÇO JUSTO", pot: "MUITO POTENCIAL", pct: 86, dec: "COMPRAR", nota: "Forte expansão de margens e Free Cash Flow via AWS e publicidade." },
+      { t: "KO", n: "Coca-Cola Co.", s: "Consumo", p: "$65.80", pe: 22.8, rsi: 42, av: "BARATO", pot: "BOM POTENCIAL", pct: 65, dec: "COMPRAR", nota: "Defensiva clássica com mais de 60 anos de subidas consecutivas de dividendo." },
+      { t: "LCID", n: "Lucid Group", s: "Consumo", p: "$2.25", pe: -2, rsi: 32, av: "MUITO CARO", pot: "POUCO POTENCIAL", pct: 15, dec: "NÃO COMPRAR", nota: "Queima de caixa severa e emissão constante de novas ações." },
+      { t: "GOOGL", n: "Alphabet (Google)", s: "Comunicações", p: "$172.50", pe: 21.4, rsi: 48, av: "BARATO", pot: "MUITO POTENCIAL", pct: 84, dec: "COMPRAR", nota: "A mais barata das Big Tech com forte crescimento em Cloud, Pesquisa e YouTube." },
+      { t: "ETN", n: "Eaton Corp.", s: "Indústria & Materiais", p: "$332.10", ply: 29.5, pe: 29.5, rsi: 50, av: "PREÇO JUSTO", pot: "MUITO POTENCIAL", pct: 80, dec: "COMPRAR", nota: "Equipamento elétrico e transformadores essenciais para redes e Data Centers." },
+      { t: "MSTR", n: "MicroStrategy", s: "Cripto & Alto Risco", p: "$245.00", pe: 65.0, rsi: 64, av: "CARO", pot: "MUITO POTENCIAL", pct: 82, dec: "AGUARDAR", nota: "Alavancada à Bitcoin; entrar apenas em dias de forte correção técnica." }
+    ];
+
+    function mudarSinal(sinal) { sinalAtivo = sinal; aplicarFiltros(); }
+
+    function aplicarFiltros() {
+      const setor = document.getElementById("filtroSetor").value;
+      const termo = document.getElementById("pesquisa").value.toLowerCase();
+
+      const filtradas = acoes.filter(a => {
+        const okSetor = setor === "TODOS" || a.s === setor;
+        const okTermo = a.t.toLowerCase().includes(termo) || a.n.toLowerCase().includes(termo);
+        let okSinal = true;
+        if (sinalAtivo === "COMPRAR") okSinal = a.dec === "COMPRAR";
+        else if (sinalAtivo === "BARATO") okSinal = a.av.includes("BARATO");
+        else if (sinalAtivo === "POTENCIAL") okSinal = a.pot === "MUITO POTENCIAL";
+        else if (sinalAtivo === "EVITAR") okSinal = a.dec === "NÃO COMPRAR";
+        return okSetor && okTermo && okSinal;
+      });
+
+      const grelha = document.getElementById("grelha");
+      grelha.innerHTML = "";
+      filtradas.forEach(a => {
+        const corDec = a.dec === "COMPRAR" ? ["bg-emerald-500/20 text-emerald-300 border-emerald-500/40", "borda-comprar", "🟢 BOA COMPRA"]
+                     : a.dec === "AGUARDAR" ? ["bg-amber-500/20 text-amber-300 border-amber-500/40", "borda-aguardar", "🟡 AGUARDAR"]
+                     : ["bg-rose-500/20 text-rose-300 border-rose-500/40", "borda-evitar", "🔴 NÃO COMPRAR"];
+
+        const corAv = a.av === "MUITO BARATO" ? "bg-emerald-950 text-emerald-300 border-emerald-600/50"
+                    : a.av === "BARATO" ? "bg-teal-950 text-teal-300 border-teal-600/50"
+                    : a.av === "PREÇO JUSTO" ? "bg-blue-950 text-blue-300 border-blue-600/50"
+                    : "bg-rose-950 text-rose-300 border-rose-600/50";
+
+        const corBarra = a.pct >= 75 ? "bg-emerald-500" : (a.pct >= 50 ? "bg-blue-500" : "bg-rose-500");
+
+        grelha.innerHTML += `
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg flex flex-col justify-between ${corDec[1]}">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <span class="text-lg font-bold text-white">${a.t}</span>
+                  <span class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded ml-1.5">${a.s}</span>
+                  <p class="text-xs text-slate-400 mt-0.5">${a.n}</p>
+                </div>
+                <span class="text-xs font-bold px-2 py-1 rounded-full border ${corDec[0]}">${corDec[2]}</span>
+              </div>
+              <div class="flex justify-between items-center bg-slate-950/70 p-2.5 rounded-lg my-3 border border-slate-800">
+                <div>
+                  <span class="text-[11px] text-slate-400 block">Preço</span>
+                  <span class="text-base font-bold text-white">${a.p}</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-[11px] text-slate-400 block mb-0.5">Avaliação</span>
+                  <span class="text-xs font-semibold px-2 py-0.5 rounded border ${corAv}">${a.av}</span>
+                </div>
+              </div>
+              <div class="mb-3">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-400">Potencial:</span>
+                  <span class="font-bold text-white">${a.pot}</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div class="${corBarra} h-full" style="width:${a.pct}%"></div>
+                </div>
+              </div>
+              <p class="text-xs text-slate-300 mb-3 leading-relaxed">${a.nota}</p>
+            </div>
+            <div class="flex justify-between text-xs text-slate-400 border-t border-slate-800 pt-2.5">
+              <span>P/E: <strong class="text-slate-200">${a.pe > 0 ? a.pe + 'x' : 'Prejuízo'}</strong></span>
+              <span>RSI (14): <strong class="text-slate-200">${a.rsi}</strong></span>
+            </div>
+          </div>`;
+      });
+    }
+
+    setInterval(() => {
+      seg--; if (seg <= 0) seg = 300;
+      document.getElementById("timer").innerText = `${String(Math.floor(seg/60)).padStart(2,'0')}:${String(seg%60).padStart(2,'0')}`;
+    }, 1000);
+
+    aplicarFiltros();
+  </script>
+</body>
+</html>
